@@ -2,7 +2,6 @@
 # 📈 Stock Market Trend Prediction
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Status](https://img.shields.io/badge/Project-Complete-brightgreen)
 ![Model](https://img.shields.io/badge/Model-LSTM%20%7C%20SVM%20%7C%20RF-orange)
 ![Deployed](https://img.shields.io/badge/Interface-Flask-blue)
