@@ -2,7 +2,6 @@
 
 A complete machine learning pipeline to analyze and predict stock market trends using historical data and advanced time series models.
 
-![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-Production-blue.svg)
 ![Made with](https://img.shields.io/badge/Made%20with-Python-orange.svg)
 
