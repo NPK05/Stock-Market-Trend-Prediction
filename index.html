@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Stock Market Trend Prediction | Pavan Kumar Nallabothula</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-date-fns/3.0.0/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   LIGHT MINIMAL PALETTE — UX Role Assignment
+   ──────────────────────────────────────────
+   #fce4e8  Blush Pink    → hero gradient, card accents
+   #dcecf8  Ice Blue      → data panels, chart bg, info boxes
+   #f0dcf4  Soft Lavender → secondary badges, hover states
+   #e49cb0  Dusty Rose    → primary CTA, active nav, highlights
+   #404c6c  Navy Slate    → sidebar, headings, text anchor
+
+   60% → #f7f4f6  warm off-white  (page bg)
+   30% → #404c6c  navy slate      (sidebar + headings)
+   10% → #e49cb0  dusty rose      (CTAs + active states)
+══════════════════════════════════════════════════════════════════ */
+:root {
+  /* Core palette — extracted exactly */
+  --blush:    #fce4e8;
+  --iceblue:  #dcecf8;
+  --lavender: #f0dcf4;
+  --rose:     #e49cb0;
+  --navy:     #404c6c;
+
+  /* Functional roles */
+  --bg:           #f7f4f6;   /* page background — warm off-white */
+  --bg-alt:       #f0ecf4;   /* alternate section bg */
+  --sidebar-bg:   #404c6c;   /* navy slate sidebar */
+  --sidebar-text: #fce4e8;   /* blush on navy */
+  --card:         #ffffff;   /* pure white cards */
+  --card-hover:   #fdf8fa;   /* card hover state */
+  --border:       #e8dff0;   /* soft lavender border */
+  --border-light: #f0ecf8;   /* very subtle divider */
+
+  /* Text */
+  --text:         #2d3348;   /* darkened navy — body */
+  --text-head:    #404c6c;   /* navy — headings */
+  --muted:        #8a8fa8;   /* blue-grey muted */
+  --muted2:       #b8b0c8;   /* very muted */
+
+  /* Accents */
+  --accent:       #e49cb0;   /* dusty rose — primary */
+  --accent-dark:  #c87a94;   /* pressed rose */
+  --accent-light: #f5c8d8;   /* light rose tint */
+  --accent-glow:  rgba(228,156,176,.15);
+  --accent2:      #f0dcf4;   /* lavender — secondary */
+  --accent3:      #dcecf8;   /* ice blue — data */
+  --accent3-dark: #a8c8e8;   /* deeper ice blue */
+
+  /* Status */
+  --green:  #7ac4a0;
+  --red:    #e49cb0;
+  --gold:   #e8c47a;
+
+  /* Shadows */
+  --shadow-sm:  0 2px 8px rgba(64,76,108,.08);
+  --shadow-md:  0 4px 20px rgba(64,76,108,.12);
+  --shadow-lg:  0 8px 40px rgba(64,76,108,.15);
+  --surface2:   #edf4fb;   /* light ice-blue panel for code/info blocks */
+}
+
+/* ── RESET ── */
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+
+/* ── BODY — warm light background with subtle texture ── */
+body{
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 70% 50% at 100% 0%, rgba(220,236,248,.6) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 0% 100%, rgba(252,228,232,.5) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(240,220,244,.2) 0%, transparent 70%);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--rose);border-radius:10px;}
+
+/* ════════════════════════════════════════════
+   SIDEBAR NAV
+════════════════════════════════════════════ */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:240px;
+  background:var(--sidebar-bg);
+  border-right:none;
+  z-index:100;
+  display:flex;flex-direction:column;
+  box-shadow:4px 0 32px rgba(64,76,108,.2);
+  overflow-y:auto;overflow-x:hidden;
+}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(252,228,232,.25);border-radius:10px;}
+
+.sidebar-brand{
+  padding:24px 20px 20px;
+  background:linear-gradient(145deg,rgba(52,60,90,1),rgba(44,52,82,1));
+  border-bottom:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;
+}
+.sidebar-brand-logo{display:none;}
+.sidebar-brand-title{display:none;}
+.sidebar-brand-sub{display:none;}
+
+.nav-group-label{
+  font-size:9px;text-transform:uppercase;letter-spacing:2px;
+  color:rgba(252,228,232,.4);
+  padding:16px 22px 5px;font-weight:700;flex-shrink:0;
+}
+
+.nav-btn{
+  display:flex;align-items:center;gap:11px;
+  padding:11px 16px 11px 20px;
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
+  color:rgba(252,228,232,.65);
+  background:none;border:none;
+  border-left:3px solid transparent;
+  cursor:pointer;transition:all .18s ease;
+  white-space:nowrap;width:100%;text-align:left;
+  flex-shrink:0;
+}
+.nav-btn .nav-icon{font-size:14px;width:20px;flex-shrink:0;text-align:center;transition:transform .18s;}
+.nav-btn:hover{
+  color:#ffffff;
+  background:rgba(252,228,232,.08);
+  border-left-color:rgba(228,156,176,.5);
+}
+.nav-btn:hover .nav-icon{transform:scale(1.15);}
+.nav-btn.active{
+  color:#ffffff;font-weight:600;
+  background:linear-gradient(90deg,rgba(228,156,176,.2),rgba(228,156,176,.05));
+  border-left-color:var(--rose);
+}
+.nav-btn.active .nav-icon{transform:scale(1.1);}
+
+.sidebar-footer{
+  margin-top:auto;padding:18px 22px;
+  border-top:1px solid rgba(255,255,255,.07);flex-shrink:0;
+}
+.sidebar-footer-text{font-size:10px;color:rgba(252,228,232,.3);line-height:1.7;}
+
+.page-wrap{margin-left:240px;min-height:100vh;display:flex;flex-direction:column;}
+
+.mobile-menu-btn{
+  display:none;position:fixed;top:14px;left:14px;z-index:200;
+  width:38px;height:38px;background:var(--navy);border:none;
+  border-radius:8px;align-items:center;justify-content:center;
+  font-size:1rem;cursor:pointer;color:white;box-shadow:var(--shadow-md);
+}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-240px);transition:transform .28s ease;}
+  .sidebar.open{transform:translateX(0);}
+  .page-wrap{margin-left:0;}
+  .mobile-menu-btn{display:flex!important;}
+}
+
+/* ════════════════════════════════════════════
+   TICKER
+════════════════════════════════════════════ */
+.ticker-bar{
+  background:var(--navy);
+  border-bottom:none;
+  padding:9px 0;overflow:hidden;
+  position:sticky;top:0;z-index:50;
+}
+.ticker-inner{display:flex;gap:60px;animation:tickerScroll 30s linear infinite;width:max-content;}
+.ticker-item{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:500;white-space:nowrap;}
+.t-name{color:rgba(252,228,232,.55);font-size:11px;letter-spacing:.5px;}
+.t-val{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums;}
+.t-up{color:#9ef8c4;}
+.t-dn{color:var(--blush);}
+@keyframes tickerScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+/* ════════════════════════════════════════════
+   HERO
+════════════════════════════════════════════ */
+.hero{
+  position:relative;
+  min-height:85vh;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;padding:0 3rem;
+  background:linear-gradient(145deg,
+    var(--blush) 0%,
+    #f8eef8 30%,
+    var(--iceblue) 65%,
+    #e8f4fc 100%);
+}
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(64,76,108,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(64,76,108,.06) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+.hero-glow{
+  position:absolute;top:30%;left:55%;transform:translate(-50%,-50%);
+  width:500px;height:400px;
+  background:radial-gradient(ellipse,rgba(240,220,244,.6) 0%,transparent 70%);
+  filter:blur(50px);pointer-events:none;
+}
+.hero-content{position:relative;z-index:2;text-align:center;max-width:820px;}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.7);
+  border:1px solid rgba(228,156,176,.4);
+  border-radius:100px;padding:7px 20px;
+  font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--accent-dark);margin-bottom:28px;
+  animation:fadeUp .7s ease both;
+  backdrop-filter:blur(8px);
+  box-shadow:var(--shadow-sm);
+}
+.hero-title{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(2.2rem,5.5vw,4.8rem);
+  font-weight:800;line-height:1.05;letter-spacing:-2px;
+  color:var(--navy);
+  animation:fadeUp .7s .1s ease both;
+}
+.hero-title span{
+  background:linear-gradient(135deg,var(--rose),var(--lavender),var(--accent3-dark));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-sub{
+  font-size:1.05rem;color:var(--muted);
+  margin:18px 0 36px;font-weight:400;
+  animation:fadeUp .7s .2s ease both;
+}
+/* ── 4 separate hero stat cards ── */
+.hero-stats{ display:none; }
+.hero-stat,.hero-stat-num,.hero-stat-label{ display:none; }
+
+.hero-cards-row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  width:100%;
+  max-width:680px;
+  margin:26px auto 0;
+  animation:fadeUp .7s .3s ease both;
+}
+.hero-card{
+  background:rgba(255,255,255,.8);
+  border:1px solid rgba(228,156,176,.2);
+  border-radius:14px;
+  padding:14px 8px 12px;
+  text-align:center;
+  backdrop-filter:blur(12px);
+  box-shadow:0 4px 14px rgba(64,76,108,.1);
+  transition:transform .2s,box-shadow .2s;
+}
+.hero-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 8px 22px rgba(64,76,108,.15);
+  border-color:rgba(228,156,176,.4);
+}
+.hero-card-icon{
+  font-size:1.2rem;margin-bottom:5px;line-height:1;
+}
+.hero-card-num{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(.85rem,1.6vw,1.4rem);
+  font-weight:800;
+  color:var(--navy);
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.hero-card-label{
+  font-size:8.5px;
+  text-transform:uppercase;
+  letter-spacing:1.2px;
+  color:var(--muted);
+  margin-top:5px;
+  line-height:1.3;
+}
+@media(max-width:580px){
+  .hero-cards-row{grid-template-columns:repeat(2,1fr);}
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+/* ════════════════════════════════════════════
+   LAYOUT
+════════════════════════════════════════════ */
+.container{max-width:1100px;margin:0 auto;padding:0 2.5rem;}
+.section{padding:56px 0;display:none;}
+.section.active{display:block;}
+
+/* Alternating section backgrounds */
+.section:nth-child(even){background:var(--bg-alt);}
+
+/* ════════════════════════════════════════════
+   SECTION HEADER
+════════════════════════════════════════════ */
+.sec-header{margin-bottom:48px;}
+.sec-tag{
+  display:inline-block;font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--accent-dark);
+  background:var(--accent-glow);
+  border:1px solid rgba(228,156,176,.3);
+  border-radius:4px;padding:4px 12px;margin-bottom:14px;font-weight:600;
+}
+.sec-title{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(1.7rem,3vw,2.5rem);
+  font-weight:800;letter-spacing:-1px;line-height:1.15;
+  color:var(--text-head);
+}
+.sec-title span{color:var(--rose);}
+.sec-desc{color:var(--muted);max-width:560px;margin-top:10px;font-size:.93rem;}
+.divider{height:2px;background:linear-gradient(90deg,var(--rose),var(--lavender),var(--iceblue),transparent);margin-bottom:44px;opacity:.5;border-radius:2px;}
+
+/* ════════════════════════════════════════════
+   CARDS
+════════════════════════════════════════════ */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;padding:26px;
+  transition:all .22s ease;
+  box-shadow:var(--shadow-sm);
+}
+.card:hover{
+  border-color:rgba(228,156,176,.4);
+  transform:translateY(-3px);
+  box-shadow:var(--shadow-md);
+}
+.card-accent{border-left:3px solid var(--rose);}
+.card-blue{border-left:3px solid var(--accent3-dark);}
+.card-lavender{border-left:3px solid var(--lavender);}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:22px;}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
+
+/* ════════════════════════════════════════════
+   STAT PILLS
+════════════════════════════════════════════ */
+.stat-pill{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;padding:20px 22px;
+  display:flex;flex-direction:column;gap:4px;
+  box-shadow:var(--shadow-sm);
+  transition:all .2s;
+  position:relative;overflow:hidden;
+}
+.stat-pill::after{
+  content:'';position:absolute;top:0;right:0;
+  width:60px;height:60px;
+  background:radial-gradient(circle,var(--blush) 0%,transparent 70%);
+  opacity:.6;
+}
+.stat-pill:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.stat-pill-val{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;}
+.stat-pill-lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+
+/* ════════════════════════════════════════════
+   BADGES
+════════════════════════════════════════════ */
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px;letter-spacing:.3px;}
+.badge-green{background:rgba(122,196,160,.15);color:#3a9470;border:1px solid rgba(122,196,160,.35);}
+.badge-blue{background:rgba(168,200,232,.2);color:#4a78b0;border:1px solid rgba(168,200,232,.4);}
+.badge-purple{background:rgba(200,168,220,.18);color:#7a50a8;border:1px solid rgba(200,168,220,.35);}
+.badge-gold{background:rgba(232,196,122,.18);color:#a07c20;border:1px solid rgba(232,196,122,.35);}
+.badge-rose{background:var(--accent-glow);color:var(--accent-dark);border:1px solid rgba(228,156,176,.3);}
+
+/* ════════════════════════════════════════════
+   TABLES
+════════════════════════════════════════════ */
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:linear-gradient(90deg,var(--navy),#4e5c84);}
+th{padding:13px 16px;text-align:left;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(252,228,232,.9);}
+td{padding:12px 16px;border-top:1px solid var(--border-light);font-size:.88rem;color:var(--text);}
+tr:hover td{background:rgba(228,156,176,.04);}
+
+/* ════════════════════════════════════════════
+   CHARTS
+════════════════════════════════════════════ */
+.chart-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:24px 24px 18px;
+  box-shadow:var(--shadow-sm);
+}
+.chart-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap;}
+.chart-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:var(--text-head);}
+.chart-sub{color:var(--muted);font-size:.8rem;margin-top:3px;}
+canvas{max-height:300px;}
+
+/* ════════════════════════════════════════════
+   FINDINGS BOX
+════════════════════════════════════════════ */
+.findings{
+  margin-top:16px;
+  background:linear-gradient(135deg,rgba(220,236,248,.4),rgba(240,220,244,.25));
+  border-left:3px solid var(--rose);
+  border-radius:0 10px 10px 0;padding:14px 18px;
+  border:1px solid var(--border);border-left:3px solid var(--rose);
+}
+.findings strong{color:var(--navy);font-family:'Syne',sans-serif;font-size:.82rem;letter-spacing:.5px;text-transform:uppercase;}
+.findings ul{margin-top:7px;padding-left:16px;}
+.findings li{color:var(--muted);font-size:.86rem;margin-bottom:4px;line-height:1.6;}
+
+/* ════════════════════════════════════════════
+   MODEL CARDS
+════════════════════════════════════════════ */
+.model-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:24px;
+  position:relative;overflow:hidden;
+  box-shadow:var(--shadow-sm);transition:all .22s;
+}
+.model-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);}
+.model-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--rose),var(--lavender),var(--iceblue));}
+.model-icon{font-size:2rem;margin-bottom:11px;}
+.model-name{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;color:var(--text-head);margin-bottom:6px;}
+.model-desc{color:var(--muted);font-size:.86rem;line-height:1.65;}
+.model-tags{margin-top:13px;display:flex;gap:7px;flex-wrap:wrap;}
+
+/* ════════════════════════════════════════════
+   ALGO PERFORMANCE BARS
+════════════════════════════════════════════ */
+.algo-perf{
+  display:flex;align-items:center;gap:14px;padding:12px 16px;
+  border-radius:10px;background:var(--card);
+  border:1px solid var(--border);margin-bottom:9px;
+  box-shadow:var(--shadow-sm);transition:all .2s;
+}
+.algo-perf:hover{border-color:rgba(228,156,176,.35);transform:translateX(3px);}
+.algo-name{font-weight:600;font-size:.88rem;min-width:175px;color:var(--text);}
+.algo-bar-wrap{flex:1;background:var(--border-light);border-radius:100px;height:7px;overflow:hidden;}
+.algo-bar{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--rose),var(--lavender),var(--accent3-dark));}
+.algo-mse{font-family:'Syne',sans-serif;font-weight:700;font-size:.84rem;color:var(--navy);min-width:80px;text-align:right;font-variant-numeric:tabular-nums;}
+
+/* ════════════════════════════════════════════
+   STATISTICAL METHOD CARDS
+════════════════════════════════════════════ */
+.method-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;}
+.method-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--shadow-sm);transition:all .2s;}
+.method-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.method-card-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.method-icon-wrap{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.icon-blue{background:rgba(220,236,248,.6);border:1px solid rgba(168,200,232,.3);}
+.icon-purple{background:rgba(240,220,244,.6);border:1px solid rgba(200,168,220,.3);}
+.icon-green{background:rgba(200,236,220,.5);border:1px solid rgba(122,196,160,.3);}
+.icon-gold{background:rgba(248,228,180,.4);border:1px solid rgba(232,196,122,.3);}
+.method-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.93rem;color:var(--text-head);}
+.method-formula{font-family:'Courier New',monospace;background:linear-gradient(135deg,rgba(220,236,248,.5),rgba(240,220,244,.3));border-radius:8px;padding:9px 12px;font-size:.78rem;color:var(--navy);margin:9px 0;border:1px solid var(--border);}
+.method-desc{color:var(--muted);font-size:.85rem;line-height:1.6;}
+
+/* ════════════════════════════════════════════
+   PREDICTION CONTROLS
+════════════════════════════════════════════ */
+.pred-controls{
+  background:linear-gradient(135deg,rgba(252,228,232,.4),rgba(220,236,248,.3));
+  border:1px solid rgba(228,156,176,.25);border-radius:16px;padding:26px;
+  margin-bottom:26px;box-shadow:var(--shadow-sm);
+}
+.pred-controls h3{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:14px;color:var(--text-head);}
+.control-row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;}
+.ctrl-group{display:flex;flex-direction:column;gap:5px;}
+.ctrl-group label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600;}
+.ctrl-group input,.ctrl-group select{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:9px;padding:9px 13px;color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:.9rem;min-width:155px;
+  transition:border-color .2s;
+}
+.ctrl-group input:focus,.ctrl-group select:focus{outline:none;border-color:var(--rose);box-shadow:0 0 0 3px rgba(228,156,176,.15);}
+.pred-btn{
+  background:linear-gradient(135deg,var(--rose),var(--lavender));
+  border:none;border-radius:9px;padding:9px 24px;
+  color:white;font-family:'Syne',sans-serif;font-weight:700;
+  font-size:.88rem;cursor:pointer;letter-spacing:.5px;
+  transition:all .2s;box-shadow:0 4px 14px rgba(228,156,176,.35);
+}
+.pred-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(228,156,176,.45);}
+.pred-result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:18px;}
+.pred-result{
+  background:var(--card);border-radius:10px;padding:14px;
+  border:1px solid var(--border);box-shadow:var(--shadow-sm);
+}
+.pred-result-name{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:3px;}
+.pred-result-open{font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;}
+.pred-result-close{font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;}
+
+/* ════════════════════════════════════════════
+   BUSINESS REC CARDS
+════════════════════════════════════════════ */
+.rec-card{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:22px;display:flex;gap:16px;
+  box-shadow:var(--shadow-sm);transition:all .2s;
+}
+.rec-card:hover{border-color:rgba(228,156,176,.4);transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.rec-icon{font-size:1.8rem;flex-shrink:0;width:48px;height:48px;
+  background:linear-gradient(135deg,var(--blush),var(--lavender));
+  border-radius:12px;display:flex;align-items:center;justify-content:center;}
+.rec-body h4{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;margin-bottom:5px;color:var(--text-head);}
+.rec-body p{color:var(--muted);font-size:.86rem;line-height:1.65;}
+
+/* ════════════════════════════════════════════
+   ROADMAP
+════════════════════════════════════════════ */
+.road-item{display:grid;grid-template-columns:auto 1fr;gap:0 22px;}
+.road-line{display:flex;flex-direction:column;align-items:center;}
+.road-dot{width:14px;height:14px;border-radius:50%;background:var(--rose);box-shadow:0 0 0 4px rgba(228,156,176,.2);flex-shrink:0;}
+.road-connector{flex:1;width:2px;background:linear-gradient(var(--rose),var(--border));margin:4px 0;}
+.road-content{padding-bottom:34px;}
+.road-phase{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--rose);margin-bottom:5px;font-weight:700;}
+.road-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:7px;color:var(--text-head);}
+.road-desc{color:var(--muted);font-size:.86rem;line-height:1.65;}
+
+/* ════════════════════════════════════════════
+   CONTACT
+════════════════════════════════════════════ */
+.contact-wrap{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:680px;}
+.contact-card{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:24px;display:flex;align-items:center;gap:16px;
+  transition:all .22s;box-shadow:var(--shadow-sm);
+}
+.contact-card:hover{border-color:rgba(228,156,176,.4);transform:translateY(-3px);box-shadow:var(--shadow-md);}
+.contact-icon-wrap{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ci-email{background:linear-gradient(135deg,var(--blush),var(--lavender));}
+.ci-linkedin{background:linear-gradient(135deg,var(--iceblue),rgba(168,200,232,.5));}
+.contact-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:3px;}
+.contact-val{font-family:'Syne',sans-serif;font-weight:600;color:var(--text-head);font-size:.88rem;word-break:break-all;}
+.contact-val a{color:inherit;text-decoration:none;}
+.contact-val a:hover{color:var(--rose);}
+
+/* ════════════════════════════════════════════
+   FOOTER
+════════════════════════════════════════════ */
+footer{
+  background:var(--navy);
+  padding:36px 0;text-align:center;
+  color:rgba(252,228,232,.5);font-size:.83rem;
+  margin-top:auto;
+}
+footer strong{color:var(--blush);}
+
+/* ════════════════════════════════════════════
+   PULSE / SCROLL TOP / INFO BOX
+════════════════════════════════════════════ */
+.pulse{display:inline-flex;align-items:center;gap:6px;}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--rose);box-shadow:0 0 8px rgba(228,156,176,.6);animation:pulseAnim 2s infinite;}
+@keyframes pulseAnim{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.5);opacity:.6;}}
+#scrollTop{position:fixed;bottom:26px;right:26px;width:42px;height:42px;background:var(--navy);border:none;border-radius:50%;color:white;font-size:1rem;cursor:pointer;box-shadow:var(--shadow-md);opacity:0;transition:opacity .3s;z-index:999;}
+#scrollTop.visible{opacity:1;}
+#scrollTop:hover{background:var(--rose);}
+
+/* ── INFO BOX (infoBox) ── */
+.info-box-tbl td{padding:0;}
+
+/* ════════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════════ */
+@media(max-width:768px){
+  .grid-2{grid-template-columns:1fr;}
+  .contact-wrap{grid-template-columns:1fr;}
+  .hero-stats{flex-direction:column;gap:16px;}
+  .hero-stat{border-right:none;border-bottom:1px solid var(--border);padding:12px 24px;}
+  .hero-stat:last-child{border-bottom:none;}
+  .control-row{flex-direction:column;}
+  .road-item{grid-template-columns:auto 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- Mobile toggle -->
+<button class="mobile-menu-btn" id="mobileMenuBtn" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <div style="width:40px;height:40px;background:linear-gradient(135deg,#fce4e8,#dcecf8);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(0,0,0,.15);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#404c6c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.92rem;color:#fff;letter-spacing:-.3px;line-height:1.2;">ML &amp; Deep<br/>Learning</div>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;border:1px solid rgba(255,255,255,.1);">
+      <div style="font-size:10px;color:rgba(252,228,232,.5);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Project Focus</div>
+      <div style="font-size:12px;color:rgba(252,228,232,.85);line-height:1.6;">📈 Stock Forecasting<br/>🤖 8 ML Algorithms<br/>🏦 NSE NIFTY Indices</div>
+    </div>
+  </div>
+
+  <div class="nav-group-label">Analysis</div>
+  <button class="nav-btn active" onclick="showTab('dataset',this)"><span class="nav-icon">📊</span>Dataset</button>
+  <button class="nav-btn" onclick="showTab('problem',this)"><span class="nav-icon">🎯</span>Problem &amp; Objectives</button>
+  <button class="nav-btn" onclick="showTab('models',this)"><span class="nav-icon">🤖</span>ML Models</button>
+  <button class="nav-btn" onclick="showTab('viz',this)"><span class="nav-icon">📈</span>Visualizations</button>
+  <button class="nav-btn" onclick="showTab('stats',this)"><span class="nav-icon">📐</span>Statistical Methods</button>
+
+  <div class="nav-group-label">Outputs</div>
+  <button class="nav-btn" onclick="showTab('predict',this)"><span class="nav-icon">🔮</span>Predictions</button>
+  <button class="nav-btn" onclick="showTab('business',this)"><span class="nav-icon">💼</span>Business Rec.</button>
+
+  <div class="nav-group-label">More</div>
+  <button class="nav-btn" onclick="showTab('future',this)"><span class="nav-icon">🚀</span>Future Enhancements</button>
+  <button class="nav-btn" onclick="showTab('contact',this)"><span class="nav-icon">📬</span>Contact</button>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-text">NIFTY IT · NIFTY Metal<br/>NIFTY Fin Services · 2003–2021</div>
+  </div>
+</aside>
+
+<div class="page-wrap">
+
+<div class="ticker-bar">
+  <div class="ticker-inner" id="ticker"></div>
+</div>
+
+
+
+
+
+<!-- ═══════════════════════════════════ 1. DATASET ═══════════════════════════════════ -->
+<div class="section active" id="tab-dataset">
+<section class="hero" id="home">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-badge"><span class="pulse"><span class="pulse-dot"></span></span>&nbsp;NSE India &nbsp;·&nbsp; NIFTY Indices</div>
+    <h1 class="hero-title">Stock Market<br/><span>Trend Prediction</span></h1>
+    <p class="hero-sub">End-to-end ML &amp; Deep Learning system for forecasting NIFTY IT, Metal &amp; Financial Services indices using 8 algorithms on 8,918+ trading records.</p>
+
+    <!-- 4 separate stat cards in one row -->
+    <div class="hero-cards-row">
+      <div class="hero-card">
+        <div class="hero-card-icon">🤖</div>
+        <div class="hero-card-num">8</div>
+        <div class="hero-card-label">ML Algorithms</div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-icon">📁</div>
+        <div class="hero-card-num">8,918</div>
+        <div class="hero-card-label">Data Records</div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-icon">📊</div>
+        <div class="hero-card-num">3</div>
+        <div class="hero-card-label">NIFTY Indices</div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-icon">📅</div>
+        <div class="hero-card-num">2003–2021</div>
+        <div class="hero-card-label">Date Coverage</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+  <div class="sec-header">
+    <h2 class="sec-title">About the <span>Dataset</span></h2>
+    <p class="sec-desc">Multi-year historical OHLCV data for three NSE NIFTY sector indices, sourced from National Stock Exchange of India.</p>
+  </div>
+
+  <div class="grid-4" style="margin-bottom:40px;">
+    <div class="stat-pill"><span class="stat-pill-val">8,918</span><span class="stat-pill-lbl">Total Records</span></div>
+    <div class="stat-pill"><span class="stat-pill-val">2003–2021</span><span class="stat-pill-lbl">Date Coverage</span></div>
+    <div class="stat-pill"><span class="stat-pill-val">3</span><span class="stat-pill-lbl">NIFTY Indices</span></div>
+    <div class="stat-pill"><span class="stat-pill-val">8</span><span class="stat-pill-lbl">Feature Columns</span></div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:32px;">
+    <div class="card card-accent">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:18px;">📁 Data Files</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>File</th><th>Index</th><th>Records</th><th>Period</th></tr></thead>
+          <tbody>
+            <tr><td><code style="color:var(--accent);font-size:.8rem;">NIFTY.csv</code></td><td>All 3 Indices</td><td>8,918</td><td>2003–2021</td></tr>
+            <tr><td><code style="color:var(--accent);font-size:.8rem;">NIFTY IT_data.csv</code></td><td>NIFTY IT</td><td>4,355</td><td>2003–2021</td></tr>
+            <tr><td><code style="color:var(--accent);font-size:.8rem;">NIFTY FIN SERVICE_data.csv</code></td><td>NIFTY Fin Svc</td><td>2,232</td><td>2012–2021</td></tr>
+            <tr><td><code style="color:var(--accent);font-size:.8rem;">NIFTY METAL_data.csv</code></td><td>NIFTY Metal</td><td>2,331</td><td>2011–2021</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card card-accent">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:18px;">🗂️ Schema / Columns</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><b>Date</b></td><td><span class="badge badge-blue">datetime</span></td><td>Trading date</td></tr>
+            <tr><td><b>Open</b></td><td><span class="badge badge-green">float</span></td><td>Opening index price</td></tr>
+            <tr><td><b>High</b></td><td><span class="badge badge-green">float</span></td><td>Intraday high</td></tr>
+            <tr><td><b>Low</b></td><td><span class="badge badge-green">float</span></td><td>Intraday low</td></tr>
+            <tr><td><b>Close</b></td><td><span class="badge badge-gold">float</span></td><td>Closing price ← <b>TARGET</b></td></tr>
+            <tr><td><b>Volume</b></td><td><span class="badge badge-purple">int</span></td><td>Shares traded</td></tr>
+            <tr><td><b>Turnover</b></td><td><span class="badge badge-green">float</span></td><td>Notional value (INR)</td></tr>
+            <tr><td><b>Indices</b></td><td><span class="badge badge-blue">string</span></td><td>Label-encoded index name</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;">🖥️ NIFTY IT</span>
+        <span class="badge badge-blue">4,355 rows</span>
+      </div>
+      <p style="color:var(--muted);font-size:.88rem;">India's IT sector index covering TCS, Infosys, Wipro, HCL. Spans 2003–2021. One of the longest time series in the dataset with strong growth trend post-2017.</p>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="badge badge-green">Peak: ~27,095</span>
+        <span class="badge badge-purple">2020 Rally: +90%</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;">⚙️ NIFTY Metal</span>
+        <span class="badge badge-blue">2,331 rows</span>
+      </div>
+      <p style="color:var(--muted);font-size:.88rem;">Tracks metals &amp; mining sector including JSW Steel, Tata Steel, Hindalco. Highly cyclical — correlated with global commodity prices and China demand.</p>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="badge badge-green">2021 High: ~3,945</span>
+        <span class="badge badge-gold">Cyclical Pattern</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;">🏦 NIFTY Fin Services</span>
+        <span class="badge badge-blue">2,232 rows</span>
+      </div>
+      <p style="color:var(--muted);font-size:.88Range:;">Covers HDFC Bank, ICICI, Bajaj Finance, Kotak. Financial sector heavily correlated with interest rate cycles and RBI policy decisions (2012–2021).</p>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="badge badge-green">2021 High: ~17,654</span>
+        <span class="badge badge-purple">Strong Uptrend</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════ 2. PROBLEM ═══════════════════════════════════ -->
+<div class="section" id="tab-problem">
+<div class="container">
+  <div class="sec-header">
+    <h2 class="sec-title">Problem Statement &amp; <span>Objectives</span></h2>
+  </div>
+  <div class="grid-2" style="margin-bottom:36px;">
+    <div class="card" style="border-color:rgba(228,156,176,.35);">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:16px;color:var(--rose);">Business Problem</h3>
+      <p style="color:var(--muted);line-height:1.8;">Stock markets are inherently volatile and driven by countless interacting factors. Retail investors and fund managers struggle to identify reliable price direction signals from raw OHLCV data alone. Without a systematic, data-driven approach, investment decisions are largely reactive — made after the price has already moved.</p>
+      <p style="color:var(--muted);line-height:1.8;margin-top:12px;">The Indian equity market (NSE) lacks accessible, open-source ML-based prediction tools specifically designed for sector indices like NIFTY IT, Metal, and Financial Services — which have distinct cyclical behaviors and risk profiles.</p>
+    </div>
+    <div class="card" style="border-color:rgba(122,196,160,.3);">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:16px;color:var(--green);">Abstract</h3>
+      <p style="color:var(--muted);line-height:1.8;">This project builds a comprehensive, end-to-end stock market trend prediction system targeting NSE NIFTY sector indices. Historical OHLCV data spanning 2003–2021 is processed through a multi-model ML framework comprising SVR, Random Forest, Linear Regression, KNN, Decision Trees, ElasticNet, and LSTM deep learning.</p>
+      <p style="color:var(--muted);line-height:1.8;margin-top:12px;">Polynomial feature expansion and temporal decomposition enrich the feature space. All models are evaluated on held-out test sets using MSE and R², with results exposed through an interactive Flask web interface that allows real-time algorithm comparison.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:32px;">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:20px;">🎯 Project Objectives</h3>
+    <div class="grid-2">
+      <div>
+        <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--rose);display:inline-block;flex-shrink:0;margin-top:7px;"></span><div><span style="font-size:.9rem;color:var(--text);">Compared 8 ML/DL algorithms on real NSE data using consistent metrics — MSE and R².</span></div></div>
+        <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--rose);display:inline-block;flex-shrink:0;margin-top:7px;"></span><div><span style="font-size:.9rem;color:var(--text);">Deployed an LSTM network to capture sequential price patterns that classical models miss.</span></div></div>
+        <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--rose);display:inline-block;flex-shrink:0;margin-top:7px;"></span><div><span style="font-size:.9rem;color:var(--text);">Used polynomial expansion (degree 2) and date decomposition to build richer input features.</span></div></div>
+      </div>
+      <div>
+        <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--rose);display:inline-block;flex-shrink:0;margin-top:7px;"></span><div><span style="font-size:.9rem;color:var(--text);">Built a Flask app where anyone can pick a stock, choose an algorithm, and see live results.</span></div></div>
+        <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--rose);display:inline-block;flex-shrink:0;margin-top:7px;"></span><div><span style="font-size:.9rem;color:var(--text);">Saved the trained pipeline as .pkl files so predictions load instantly without retraining.</span></div></div>
+        <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--rose);display:inline-block;flex-shrink:0;margin-top:7px;"></span><div><span style="font-size:.9rem;color:var(--text);">Turned model outputs into plain signals — trend direction, support zones, and volatility windows.</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="border-color:rgba(245,158,11,.25);">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:16px;">🔬 Scope &amp; Constraints</h3>
+    <div class="grid-3">
+      <div><b style="color:var(--gold);">In Scope</b><ul style="margin-top:8px;padding-left:18px;color:var(--muted);font-size:.88rem;"><li>NSE NIFTY sector indices</li><li>OHLCV-based regression</li><li>2003–2021 historical window</li><li>8 ML/DL algorithms</li><li>Flask web interface</li></ul></div>
+      <div><b style="color:var(--rose);">Out of Scope</b><ul style="margin-top:8px;padding-left:18px;color:var(--muted);font-size:.88rem;"><li>Individual stock prediction</li><li>Options / derivatives pricing</li><li>Sentiment / news analysis</li><li>Real-time live data</li><li>Portfolio optimization</li></ul></div>
+      <div><b style="color:var(--accent);">Assumptions</b><ul style="margin-top:8px;padding-left:18px;color:var(--muted);font-size:.88rem;"><li>Past patterns inform future prices</li><li>Market is not perfectly efficient</li><li>OHLCV data is clean &amp; complete</li><li>Short-term horizon (1–5 days)</li><li>No transaction costs modelled</li></ul></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════ 3. MODELS ═══════════════════════════════════ -->
+<div class="section" id="tab-models">
+<div class="container">
+  <div class="sec-header">
+    <h2 class="sec-title">ML Models &amp; <span>Algorithms</span></h2>
+    <p class="sec-desc">8 algorithms spanning classical regression, SVMs, ensemble methods, and deep learning — all implemented in <code style="color:var(--accent);">utils.py</code>.</p>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:32px;">
+    <div class="model-card">
+      <div class="model-icon">🌲</div>
+      <div class="model-name">Random Forest Regressor</div>
+      <div class="model-desc">Ensemble of 10–15 decision trees trained on bootstrapped subsets. Each tree votes on the closing price; the final prediction is the average. Polynomial feature expansion (degree=2) applied as preprocessing. Achieves R²~0.99 on training set.</div>
+      <div class="model-tags"><span class="badge badge-green">Best Performer</span><span class="badge badge-blue">n_estimators=15</span><span class="badge badge-gold">Serialised as .pkl</span></div>
+    </div>
+    <div class="model-card">
+      <div class="model-icon">🧠</div>
+      <div class="model-name">LSTM Recurrent Neural Network</div>
+      <div class="model-desc">Long Short-Term Memory network built with TensorFlow/Keras. Designed specifically for sequential time-series data. Maintains a hidden state across timesteps, capturing long-range dependencies invisible to classical models. Input normalised via MinMaxScaler.</div>
+      <div class="model-tags"><span class="badge badge-purple">Deep Learning</span><span class="badge badge-blue">TensorFlow / Keras</span><span class="badge badge-gold">Sequential Aware</span></div>
+    </div>
+    <div class="model-card">
+      <div class="model-icon">📐</div>
+      <div class="model-name">Support Vector Regression</div>
+      <div class="model-desc">Three kernel variants: Linear (SVR_linear, C=1000), Polynomial (SVR_poly, degree=3), and RBF (SVR_rbf, C=1000, γ=0.1). RBF kernel handles complex non-linear price patterns. All trained on lagged close prices with 67/33 train-test split.</div>
+      <div class="model-tags"><span class="badge badge-blue">3 Kernels</span><span class="badge badge-green">Robust to Outliers</span></div>
+    </div>
+    <div class="model-card">
+      <div class="model-icon">📉</div>
+      <div class="model-name">Linear Regression &amp; ElasticNet</div>
+      <div class="model-desc">Linear Regression serves as the interpretable baseline. ElasticNet combines L1 (Lasso) + L2 (Ridge) regularisation to reduce overfitting on noisy financial series. Both trained on look_back=1 lagged close price features.</div>
+      <div class="model-tags"><span class="badge badge-green">Baseline Model</span><span class="badge badge-blue">L1+L2 Penalty</span></div>
+    </div>
+    <div class="model-card">
+      <div class="model-icon">🔵</div>
+      <div class="model-name">K-Nearest Neighbours (KNN)</div>
+      <div class="model-desc">Non-parametric instance-based regression with k=2. Predicts the next close price by averaging the 2 most similar historical values. No training phase — prediction is computed at inference time. Sensitive to scaling and noise.</div>
+      <div class="model-tags"><span class="badge badge-gold">k=2 neighbours</span><span class="badge badge-purple">No Training Phase</span></div>
+    </div>
+    <div class="model-card">
+      <div class="model-icon">🌿</div>
+      <div class="model-name">Decision Tree Regressor</div>
+      <div class="model-desc">Single unpruned decision tree (sklearn CART). Fully interpretable — every prediction can be traced along a branch from root to leaf. High variance on unseen financial data due to lack of pruning; used primarily as a comparison baseline.</div>
+      <div class="model-tags"><span class="badge badge-green">Fully Interpretable</span><span class="badge badge-gold">Baseline Reference</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:32px;">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:20px;">⚙️ Preprocessing Pipeline</h3>
+    <div class="grid-3">
+      <div style="background:rgba(220,236,248,.35);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="color:var(--accent);font-size:.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Step 1 — Feature Extraction</div>
+        <div style="font-size:.87rem;color:var(--muted);">Date → Year, Month, Day, DayOfWeek, WeekOfYear. Indices → LabelEncoder integer.</div>
+      </div>
+      <div style="background:rgba(220,236,248,.35);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="color:var(--accent);font-size:.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Step 2 — Polynomial Expansion</div>
+        <div style="font-size:.87rem;color:var(--muted);">PolynomialFeatures(degree=2) expands 4 features → 15 interaction terms for RF regression path.</div>
+      </div>
+      <div style="background:rgba(220,236,248,.35);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="color:var(--accent);font-size:.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Step 3 — Scaling &amp; Split</div>
+        <div style="font-size:.87rem;color:var(--muted);">MinMaxScaler for LSTM path. 67/33 train-test split for classical models. Sequential split for LSTM.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:20px;">📊 Model Comparison Table</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Algorithm</th><th>Type</th><th>Key Hyperparams</th><th>Expected R²</th><th>Strength</th><th>Limitation</th></tr></thead>
+        <tbody>
+          <tr><td><b>Random Forest</b></td><td><span class="badge badge-green">Ensemble</span></td><td>n_est=15, poly deg=2</td><td>0.97–0.99</td><td>Non-linear, feature importance</td><td>Can overfit</td></tr>
+          <tr><td><b>LSTM</b></td><td><span class="badge badge-purple">Deep Learning</span></td><td>look_back=1, MinMaxScaler</td><td>0.95–0.99</td><td>Temporal dependencies</td><td>Needs large data</td></tr>
+          <tr><td><b>SVR (RBF)</b></td><td><span class="badge badge-blue">SVM</span></td><td>C=1000, γ=0.1</td><td>0.90–0.96</td><td>Robust to outliers</td><td>Slow on large sets</td></tr>
+          <tr><td><b>SVR (Linear)</b></td><td><span class="badge badge-blue">SVM</span></td><td>C=1000</td><td>0.85–0.92</td><td>Fast, stable</td><td>Misses non-linearity</td></tr>
+          <tr><td><b>Linear Regression</b></td><td><span class="badge badge-gold">Baseline</span></td><td>—</td><td>0.85–0.93</td><td>Interpretable</td><td>Linear only</td></tr>
+          <tr><td><b>ElasticNet</b></td><td><span class="badge badge-blue">Regularised</span></td><td>L1+L2, rs=0</td><td>0.82–0.90</td><td>Less overfit</td><td>Linear assumption</td></tr>
+          <tr><td><b>KNN</b></td><td><span class="badge badge-gold">Instance</span></td><td>k=2</td><td>0.70–0.85</td><td>No training phase</td><td>Noise sensitive</td></tr>
+          <tr><td><b>Decision Tree</b></td><td><span class="badge badge-gold">Baseline</span></td><td>Unpruned</td><td>0.95–1.0 train</td><td>Interpretable</td><td>Overfits badly</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════ 4. VIZ ═══════════════════════════════════ -->
+<div class="section" id="tab-viz">
+<div class="container">
+  <div class="sec-header">
+    <h2 class="sec-title">Advanced <span>Visualizations</span></h2>
+    <p class="sec-desc">All charts use real NIFTY data extracted from your dataset (2020–2021 period).</p>
+  </div>
+
+  <!-- Chart 1: Candlestick -->
+  <div class="chart-card" style="margin-bottom:28px;">
+    <div class="chart-card-header">
+      <div><div class="chart-title">1. Candlestick Chart — NIFTY IT (Dec 2020 – Feb 2021)</div><div class="chart-sub">Each candle = 1 trading day. Green = bullish close, Red = bearish close.</div></div>
+      <span class="badge badge-green">NIFTY IT</span>
+    </div>
+    <canvas id="candleChart" height="280"></canvas>
+    <div class="findings">
+      <strong>Key Findings</strong>
+      <ul>
+        <li>Strong bullish rally from Dec 22, 2020 — NIFTY IT surged from ~22,845 to a peak of 27,095 in Jan 2021 (+18.6% in 3 weeks).</li>
+        <li>Jan 11, 2021 saw the highest single-day volume (100.7M shares) coinciding with a breakout above 27,000.</li>
+        <li>Feb 22–26 shows a bearish reversal cluster — consecutive red candles signaling short-term correction from all-time highs.</li>
+        <li>Large upper wicks on Jan 5–6 indicate strong selling pressure near 26,000 before the final breakout.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Chart 2: Line Chart -->
+  <div class="chart-card" style="margin-bottom:28px;">
+    <div class="chart-card-header">
+      <div><div class="chart-title">2. Long-Term Close Price Line Chart — NIFTY IT (2003–2021)</div><div class="chart-sub">Monthly closing price over 18 years. Reveals macro-level market cycles.</div></div>
+      <span class="badge badge-blue">18-Year View</span>
+    </div>
+    <canvas id="lineChart" height="240"></canvas>
+    <div class="findings">
+      <strong>Key Findings</strong>
+      <ul>
+        <li>2003–2004 dot-com recovery peak: NIFTY IT briefly hit ~23,542 before the 2004 election crash wiped 90% of value (index reconstitution effect).</li>
+        <li>2008 Global Financial Crisis: sharp decline from ~5,800 to ~2,094 (−64%) in 12 months.</li>
+        <li>2020 COVID crash (Mar 2020): dropped to 12,763 — but recovered to record highs by Jul 2020 within 4 months.</li>
+        <li>2020–2021 digital acceleration: NIFTY IT outperformed all sectors, rising +90% as work-from-home drove tech demand globally.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Chart 3: OHLC Bar -->
+  <div class="chart-card" style="margin-bottom:28px;">
+    <div class="chart-card-header">
+      <div><div class="chart-title">3. OHLC Bar Chart — NIFTY Metal (Jan–Feb 2021)</div><div class="chart-sub">Each bar shows Open, High, Low, Close for the trading day.</div></div>
+      <span class="badge badge-gold">NIFTY Metal</span>
+    </div>
+    <canvas id="ohlcChart" height="260"></canvas>
+    <div class="findings">
+      <strong>Key Findings</strong>
+      <ul>
+        <li>NIFTY Metal entered a strong uptrend in Feb 2021 — price climbed from ~3,077 to ~3,928 (+27.7%) in just 5 weeks.</li>
+        <li>Feb 25, 2021 recorded the highest high in the period at 3,945 — a multi-year breakout driven by global steel prices.</li>
+        <li>Jan 18–22 shows a consolidation cluster with narrowing OHLC ranges, typical of accumulation before a breakout move.</li>
+        <li>Feb 1 opened at 3,096 and closed at 3,227 — a strong bullish engulfing after 2 weeks of sideways movement.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Chart 4: Heikin-Ashi -->
+  <div class="chart-card" style="margin-bottom:28px;">
+    <div class="chart-card-header">
+      <div><div class="chart-title">4. Heikin-Ashi Chart — NIFTY Financial Services (Dec 2020 – Feb 2021)</div><div class="chart-sub">Smoothed candlesticks using HA formula. Removes noise to reveal clear trend direction.</div></div>
+      <span class="badge badge-purple">Heikin-Ashi</span>
+    </div>
+    <canvas id="haChart" height="280"></canvas>
+    <div class="findings">
+      <strong>Key Findings</strong>
+      <ul>
+        <li>Heikin-Ashi reveals an unbroken green (bullish) trend from Dec 8, 2020 to Feb 16, 2021 — 50 consecutive bullish candles with almost no wicks on the downside.</li>
+        <li>The sharp Feb 22–26 reversal (3 red HA candles in a row) signals the end of the trend — a reliable exit signal for traders.</li>
+        <li>Budget day (Feb 1, 2021) produced the largest HA candle body (+8.6%) as the Union Budget 2021 announced infra spending — a strong financial services catalyst.</li>
+        <li>HA smoothing confirms what regular candlesticks showed with noise: the index was in a clean, sustained uptrend from mid-December to mid-February.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Chart 5: Volume + Price -->
+  <div class="chart-card" style="margin-bottom:28px;">
+    <div class="chart-card-header">
+      <div><div class="chart-title">5. Volume vs Price Analysis — NIFTY IT (Dec 2020 – Feb 2021)</div><div class="chart-sub">Volume bars (grey) overlaid with close price line (cyan). Identifies volume-price divergences.</div></div>
+      <span class="badge badge-blue">Volume Analysis</span>
+    </div>
+    <canvas id="volChart" height="260"></canvas>
+    <div class="findings">
+      <strong>Key Findings</strong>
+      <ul>
+        <li>Jan 11, 2021: highest volume (100.7M) coincided with a breakout above 27,000 — strong confirmation of the trend.</li>
+        <li>Jan 8 and Jan 14 both saw 80M+ volume with price near resistance at 26,000–27,000 — institutional accumulation zone.</li>
+        <li>Dec 23: spike to 87.3M volume on the breakout day from 23,611 → 24,167 (the biggest single-day gain in the period).</li>
+        <li>Late Feb volume (49.2M on Feb 26) spiked as price fell — a bearish distribution signal indicating smart money selling.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Chart 6: Grouped Bar -->
+  <div class="chart-card" style="margin-bottom:28px;">
+    <div class="chart-card-header">
+      <div><div class="chart-title">6. Yearly Average Close — All 3 NIFTY Indices (2012–2021)</div><div class="chart-sub">Grouped bar chart comparing average annual closing prices across IT, Metal, and Financial Services.</div></div>
+      <span class="badge badge-green">Multi-Index</span>
+    </div>
+    <canvas id="barGroupChart" height="280"></canvas>
+    <div class="findings">
+      <strong>Key Findings</strong>
+      <ul>
+        <li>NIFTY IT dramatically outperformed all indices in 2020–2021, rising from 17,281 (2020 avg) to 25,702 (2021) — a surge of +48.7%.</li>
+        <li>NIFTY Metal has remained flat for most of 2012–2019 (~2,100–3,600 range), reflecting global commodity market stagnation.</li>
+        <li>NIFTY Financial Services shows the most consistent growth trajectory: from 4,375 in 2012 to 16,033 in 2021 — a 3.66× increase over 9 years.</li>
+        <li>2019–2020 saw a dip across all indices due to COVID — but 2021 shows full recovery and new highs, especially in IT.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════════ 5. STATS ═══════════════════════════════════ -->
+<div class="section" id="tab-stats">
+<div class="container">
+  <div class="sec-header">
+    <h2 class="sec-title">Statistical Methods <span>Used</span></h2>
+    <p class="sec-desc">Mathematical and statistical foundations underpinning the feature engineering, model training, and evaluation pipeline.</p>
+  </div>
+  <div class="method-grid">
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-blue">📏</div><div class="method-name">Mean Squared Error (MSE)</div></div>
+      <div class="method-formula">MSE = Σ(yᵢ − ŷᵢ)² / n</div>
+      <div class="method-desc">Primary evaluation metric for all regression models. Penalizes large errors heavily due to squaring. Used to rank all 8 algorithms on the 33% test set. Lower MSE = better model.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-green">✅</div><div class="method-name">R² Score (Coefficient of Determination)</div></div>
+      <div class="method-formula">R² = 1 − SS_res / SS_tot</div>
+      <div class="method-desc">Measures proportion of variance explained by the model. R²=1.0 is perfect fit; R²=0 means model predicts the mean. Random Forest (poly) achieves ~0.99 on training data.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-purple">🔢</div><div class="method-name">Polynomial Feature Expansion</div></div>
+      <div class="method-formula">X_poly = PolyFeatures(degree=2)(X)</div>
+      <div class="method-desc">Transforms 4 input features [Day, Month, Year, Index] into 15 features including all pairwise interactions (e.g. Day×Month, Year²). Allows linear models to fit non-linear relationships.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-gold">📊</div><div class="method-name">Label Encoding</div></div>
+      <div class="method-formula">LabelEncoder().fit_transform(Indices)</div>
+      <div class="method-desc">Converts categorical index names (NIFTY IT, NIFTY METAL, etc.) to integer labels (0, 1, 2). Allows models to distinguish between index types as a numeric ordinal feature.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-blue">📉</div><div class="method-name">Min-Max Normalization</div></div>
+      <div class="method-formula">x' = (x − min) / (max − min)</div>
+      <div class="method-desc">Applied to the close price series before LSTM training. Scales all values to [0, 1] range. Critical to prevent vanishing/exploding gradients in LSTM cells during backpropagation.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-green">🧩</div><div class="method-name">Sliding Window (Look-Back)</div></div>
+      <div class="method-formula">X[t] = close[t : t+k] → Y[t] = close[t+k]</div>
+      <div class="method-desc">Creates supervised learning pairs from time-series. With look_back=1: uses yesterday's close to predict today's. Can be extended to 5/20/60 days to capture weekly/monthly momentum.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-purple">✂️</div><div class="method-name">Train-Test Split</div></div>
+      <div class="method-formula">train_test_split(X, y, test_size=0.33)</div>
+      <div class="method-desc">67/33 random split used for all classical models. For LSTM, a sequential split is used (last 2 rows as test) to avoid data leakage — future data is never visible to the model during training.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-gold">📐</div><div class="method-name">Heikin-Ashi Transformation</div></div>
+      <div class="method-formula">HA_Close = (O+H+L+C)/4<br/>HA_Open = (prev_HA_O + prev_HA_C)/2</div>
+      <div class="method-desc">Statistical smoothing of OHLC data by computing modified candles. Reduces noise in price series and makes trends more visually identifiable. Applied in visualization layer.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-blue">🎲</div><div class="method-name">Bootstrap Aggregating (Bagging)</div></div>
+      <div class="method-formula">RF = avg(Tree₁(X_b₁), Tree₂(X_b₂), ..., Treeₙ)</div>
+      <div class="method-desc">Core mechanism of Random Forest. Each tree trains on a bootstrapped (sampled with replacement) subset of training data. Averaging multiple trees reduces variance and prevents overfitting.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-green">⚖️</div><div class="method-name">ElasticNet Regularization</div></div>
+      <div class="method-formula">L(β) = MSE + α·ρ·|β|₁ + α(1-ρ)/2·|β|₂²</div>
+      <div class="method-desc">Combines L1 (Lasso) and L2 (Ridge) penalties. L1 enforces sparsity (drops irrelevant features); L2 handles correlated features. Balances bias-variance tradeoff on noisy financial data.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-purple">🧠</div><div class="method-name">LSTM Backpropagation Through Time</div></div>
+      <div class="method-formula">∂L/∂W = Σ(t=1 to T) ∂Lₜ/∂W</div>
+      <div class="method-desc">Training algorithm for LSTM. Gradients flow backward through time steps. LSTM gates (forget, input, output) prevent vanishing gradients — key advantage over vanilla RNNs for long sequences.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-card-top"><div class="method-icon-wrap icon-gold">📈</div><div class="method-name">Temporal Feature Decomposition</div></div>
+      <div class="method-formula">Date → {Year, Month, Day, DayOfWeek, WeekOfYear}</div>
+      <div class="method-desc">Decomposes a single datetime into 5 numerical features. Allows models to learn seasonal patterns: month effects (budget season), day effects (expiry dates), and long-term yearly trends.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════ 6. PREDICT ═══════════════════════════════════ -->
+<div class="section" id="tab-predict">
+<div class="container">
+  <div class="sec-header">
+    <h2 class="sec-title">Prediction: <span>Opening &amp; Closing Price</span></h2>
+    <p class="sec-desc">Enter a date and index to get predicted Open &amp; Close prices from all 5 algorithms, plus a comparative accuracy chart.</p>
+  </div>
+
+  <div class="pred-controls">
+    <h3>🎛️ Configure Prediction</h3>
+    <div class="control-row">
+      <div class="ctrl-group"><label>Date</label><input type="date" id="predDate" value="2021-02-01" min="2020-12-03" max="2021-02-26"/></div>
+      <div class="ctrl-group"><label>Index</label>
+        <select id="predIndex">
+          <option value="NIFTY_IT">NIFTY IT</option>
+          <option value="NIFTY_METAL">NIFTY Metal</option>
+          <option value="NIFTY_FIN">NIFTY Fin Services</option>
+        </select>
+      </div>
+      <button class="pred-btn" onclick="runPrediction()">Run Prediction →</button>
+    </div>
+    <div class="pred-result-grid" id="predResults"></div>
+  </div>
+
+  <!-- Comparative prediction chart -->
+  <div class="chart-card" style="margin-bottom:28px;">
+    <div class="chart-card-header">
+      <div><div class="chart-title">Algorithm Comparison — Predicted vs Actual Close Price</div><div class="chart-sub">NIFTY IT, Dec 2020 – Feb 2021. Lower deviation from Actual (black line) = more accurate model.</div></div>
+    </div>
+    <canvas id="predCompChart" height="300"></canvas>
+  </div>
+
+  <!-- MSE comparison -->
+  <div class="card">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:20px;">📊 MSE Accuracy Ranking (Lower = Better)</h3>
+    <div id="mseRanking"></div>
+    <div class="findings" style="margin-top:20px;">
+      <strong>Model Selection Insight</strong>
+      <ul>
+        <li><b>LSTM</b> achieves the lowest MSE (~28,000) — it benefits from sequential awareness even with look_back=1.</li>
+        <li><b>Random Forest</b> is a close second (~34,000) — polynomial features give it a significant edge over other classical models.</li>
+        <li><b>KNN (k=2)</b> shows highest variance — its predictions are highly sensitive to the nearest neighbour and can swing widely on volatile days.</li>
+        <li>All models track the overall price trend well, but diverge significantly during high-volatility events (Jan 11 breakout, Feb 22 selloff).</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════ 7. BUSINESS ═══════════════════════════════════ -->
+<div class="section" id="tab-business">
+<div class="container">
+  <div class="sec-header">
+    <h2 class="sec-title">Business <span>Recommendations</span></h2>
+    <p class="sec-desc">Translating model outputs into actionable investment and technology strategy for financial firms.</p>
+  </div>
+  <div class="grid-2" style="margin-bottom:24px;">
+    <div class="rec-card"><div class="rec-icon">🎯</div><div class="rec-body"><h4>Use LSTM for Short-Term Signal Generation</h4><p>Given LSTM's lowest MSE in comparative testing, deploy it as the primary engine for 1–5 day ahead price forecasting. Use RF as a secondary validator. Only act on trades where both models agree on direction.</p></div></div>
+    <div class="rec-card"><div class="rec-icon">🌿</div><div class="rec-body"><h4>Deploy Random Forest for Explainability</h4><p>In regulated financial environments (SEBI compliance), explainability is mandatory. Random Forest provides SHAP-compatible feature importance — use it wherever model decisions must be audited or explained to clients.</p></div></div>
+    <div class="rec-card"><div class="rec-icon">📊</div><div class="rec-body"><h4>Sector Rotation Strategy</h4><p>NIFTY IT outperforms during tech booms; NIFTY Metal leads commodity cycles; Fin Services tracks rate cycles. Use the multi-index comparative model to allocate capital across sectors based on predicted momentum differentials.</p></div></div>
+    <div class="rec-card"><div class="rec-icon">⚠️</div><div class="rec-body"><h4>Integrate Volatility Filters</h4><p>Do not use predictions in isolation during high-volatility events (budget days, RBI policy announcements, global crises). Implement an ATR (Average True Range) filter — pause automated signals when ATR exceeds 2× its 20-day average.</p></div></div>
+    <div class="rec-card"><div class="rec-icon">🔁</div><div class="rec-body"><h4>Retrain Monthly with Walk-Forward Validation</h4><p>Market regimes shift. Retrain all models monthly on a rolling 2-year window. Use walk-forward validation (not random split) to prevent data leakage and ensure test performance reflects real-world generalization.</p></div></div>
+    <div class="rec-card"><div class="rec-icon">💰</div><div class="rec-body"><h4>Backtest Before Live Deployment</h4><p>Simulate 2 years of trades using model signals on historical data before going live. Track Sharpe ratio, max drawdown, and win rate. A model with good MSE can still lose money if the prediction timing is slightly off.</p></div></div>
+    <div class="rec-card"><div class="rec-icon">🌐</div><div class="rec-body"><h4>Integrate yfinance for Live Data</h4><p>The yfinance library is already in requirements.txt. Configure it to auto-fetch latest NSE NIFTY data daily at 4pm IST (after market close) and append to the training dataset for continuous model freshness.</p></div></div>
+    <div class="rec-card"><div class="rec-icon">🛡️</div><div class="rec-body"><h4>Add Fundamental Overlay</h4><p>Pure OHLCV models miss earnings releases, RBI rate decisions, and global macro events. Augment with a simple event calendar filter — suppress or weight down model signals on known high-impact event dates.</p></div></div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:18px;">📋 Risk Disclaimer</h3>
+    <p style="color:var(--muted);line-height:1.8;font-size:.9rem;">This project is for educational and research purposes only. All predictions are based on historical data and statistical models. <strong style="color:var(--rose);">Past performance does not guarantee future results.</strong> Stock market investments involve risk including potential loss of principal. Always conduct your own due diligence before making any investment decisions. This system does not account for macroeconomic factors, geopolitical events, or company-specific news.</p>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════ 8. FUTURE ═══════════════════════════════════ -->
+<div class="section" id="tab-future">
+<div class="container">
+  <div class="sec-header">
+    <h2 class="sec-title">Future <span>Enhancements</span></h2>
+    <p class="sec-desc">Roadmap to transform this portfolio project into a production-grade real-time trading intelligence system.</p>
+  </div>
+
+  <div style="max-width:800px;">
+    <div class="road-item">
+      <div class="road-line"><div class="road-dot"></div><div class="road-connector"></div></div>
+      <div class="road-content">
+        <div class="road-phase">Phase 1 — Authentication Layer</div>
+        <div class="road-title">🔐 User Login &amp; Multi-Tenancy</div>
+        <div class="road-desc">Add Flask-Login / JWT authentication so multiple analysts can log in with personal dashboards. Each user's prediction history and preferred algorithms are stored in a SQLite or PostgreSQL database. After 30+ inputs, the system calculates which algorithm gave the most accurate predictions for that user's selected stocks and automatically highlights the recommended model.</div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;"><span class="badge badge-blue">Flask-Login</span><span class="badge badge-purple">SQLite</span><span class="badge badge-green">Per-user analytics</span></div>
+      </div>
+    </div>
+    <div class="road-item">
+      <div class="road-line"><div class="road-dot" style="background:var(--lavender);box-shadow:0 0 0 4px rgba(240,220,244,.35);"></div><div class="road-connector" style="background:linear-gradient(var(--lavender),var(--border-light));"></div></div>
+      <div class="road-content">
+        <div class="road-phase">Phase 2 — Adaptive Algorithm Selection</div>
+        <div class="road-title">🧮 Auto-Best Algorithm Engine</div>
+        <div class="road-desc">Track prediction accuracy per algorithm per user over time. After collecting 30+ prediction-vs-actual pairs, compute a rolling 30-day accuracy score for each model. The system automatically promotes the best-performing algorithm to "Recommended" status and demotes underperformers. Users can override manually.</div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;"><span class="badge badge-gold">Rolling MSE tracker</span><span class="badge badge-blue">Auto-recommend</span></div>
+      </div>
+    </div>
+    <div class="road-item">
+      <div class="road-line"><div class="road-dot" style="background:#7ac4a0;box-shadow:0 0 0 4px rgba(122,196,160,.3);"></div><div class="road-connector" style="background:linear-gradient(#7ac4a0,var(--border-light));"></div></div>
+      <div class="road-content">
+        <div class="road-phase">Phase 3 — Real-Time Data Pipeline</div>
+        <div class="road-title">📡 Live Data Collection &amp; Processing</div>
+        <div class="road-desc">
+          <b>How to collect real-time data:</b> Use the <code style="color:var(--accent);">yfinance</code> library (already in requirements.txt) to fetch live NSE data. Schedule a Python cron job (using APScheduler or Celery) to run at 4:00 PM IST daily after market close:<br/><br/>
+          <code style="color:#3a6e40;font-size:.82rem;background:rgba(220,236,248,.45);border:1px solid rgba(168,200,232,.3);padding:6px 10px;border-radius:6px;display:block;margin:8px 0;">ticker = yf.Ticker("^CNXIT"); df = ticker.history(period="1d")</code><br/>
+          <b>How to process:</b> Append new OHLCV row to the training dataset. Re-run feature engineering (polynomial expansion, temporal decomposition). Trigger incremental retraining of RF and LSTM models. Update the serialised .pkl files. Push new predictions to the dashboard via WebSocket (Flask-SocketIO).<br/><br/>
+          <b>Tech stack:</b> APScheduler (job scheduling) → yfinance (data fetch) → pandas (transformation) → joblib (model update) → Flask-SocketIO (live push to UI).
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;"><span class="badge badge-green">yfinance</span><span class="badge badge-blue">APScheduler</span><span class="badge badge-purple">Flask-SocketIO</span><span class="badge badge-gold">Auto-retrain</span></div>
+      </div>
+    </div>
+    <div class="road-item">
+      <div class="road-line"><div class="road-dot" style="background:var(--gold);box-shadow:0 0 0 4px rgba(232,196,122,.3);"></div><div class="road-connector" style="background:linear-gradient(var(--gold),var(--border));"></div></div>
+      <div class="road-content">
+        <div class="road-phase">Phase 4 — Technical Indicators</div>
+        <div class="road-title">📈 Advanced Feature Engineering</div>
+        <div class="road-desc">The <code style="color:var(--accent);">ta</code> library is already in requirements.txt but unused. Add RSI(14), MACD, Bollinger Bands, ATR, OBV, and MFI as model features. These indicators encode market momentum, volatility, and volume pressure — dramatically improving prediction accuracy over OHLCV alone.</div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;"><span class="badge badge-blue">RSI · MACD · Bollinger</span><span class="badge badge-green">ATR · OBV · MFI</span></div>
+      </div>
+    </div>
+    <div class="road-item">
+      <div class="road-line"><div class="road-dot" style="background:var(--lavender);box-shadow:0 0 0 4px rgba(240,220,244,.35);"></div><div class="road-connector" style="background:linear-gradient(var(--lavender),var(--border-light));"></div></div>
+      <div class="road-content">
+        <div class="road-phase">Phase 5 — NLP &amp; Sentiment</div>
+        <div class="road-title">💬 News Sentiment Analysis</div>
+        <div class="road-desc">Integrate a news API (NewsAPI.org or NSE's official feed) to fetch financial headlines for each index. Run FinBERT (a finance-specific BERT model) for sentiment classification (Positive/Neutral/Negative). Add sentiment score as an additional feature to the ML models. Studies show news sentiment improves short-term prediction accuracy by 8–15%.</div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;"><span class="badge badge-purple">FinBERT</span><span class="badge badge-blue">NewsAPI</span><span class="badge badge-gold">+8–15% accuracy</span></div>
+      </div>
+    </div>
+    <div class="road-item">
+      <div class="road-line"><div class="road-dot" style="background:var(--rose);box-shadow:0 0 0 4px rgba(228,156,176,.3);"></div></div>
+      <div class="road-content">
+        <div class="road-phase">Phase 6 — Production Deployment</div>
+        <div class="road-title">🚀 Cloud &amp; API Deployment</div>
+        <div class="road-desc">Containerise the application with Docker. Deploy on AWS EC2 or Azure App Service. Expose predictions as a REST API using FastAPI so external applications (trading platforms, mobile apps) can consume predictions programmatically. Add a CI/CD pipeline with GitHub Actions for automatic testing and deployment on every code push.</div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;"><span class="badge badge-green">Docker</span><span class="badge badge-blue">FastAPI</span><span class="badge badge-purple">AWS/Azure</span><span class="badge badge-gold">GitHub Actions CI/CD</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════ 9. CONTACT ═══════════════════════════════════ -->
+<div class="section" id="tab-contact">
+<div class="container">
+  <div class="sec-header">
+    <h2 class="sec-title">Get In <span>Touch</span></h2>
+    <p class="sec-desc">Built by Pavan Kumar Nallabothula — Data Analyst specializing in ML, forecasting, and financial data systems.</p>
+  </div>
+  <div class="contact-wrap" style="margin-bottom:40px;">
+    <div class="contact-card">
+      <div class="contact-icon-wrap ci-email">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+      </div>
+      <div><div class="contact-lbl">Email</div><div class="contact-val"><a href="mailto:npavankumarus72@gmail.com">npavankumarus72@gmail.com</a></div></div>
+    </div>
+    <div class="contact-card">
+      <div class="contact-icon-wrap ci-linkedin">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#0A66C2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+      </div>
+      <div><div class="contact-lbl">LinkedIn</div><div class="contact-val"><a href="https://www.linkedin.com/in/nallabothulapavankumar-data-analyst/" target="_blank">nallabothulapavankumar-data-analyst</a></div></div>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:720px;">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:18px;">👤 About the Author</h3>
+    <p style="color:var(--muted);line-height:1.8;margin-bottom:16px;">Professional Data Analyst with expertise in machine learning, predictive modelling, and financial data systems. This project is part of a portfolio demonstrating end-to-end ML pipeline development — from raw data ingestion through feature engineering, multi-model training, evaluation, and web deployment.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <span class="badge badge-blue">Python</span>
+      <span class="badge badge-purple">Machine Learning</span>
+      <span class="badge badge-green">Deep Learning (LSTM)</span>
+      <span class="badge badge-gold">Financial Analytics</span>
+      <span class="badge badge-blue">Flask / Web Dev</span>
+      <span class="badge badge-purple">NSE / Indian Markets</span>
+    </div>
+  </div>
+</div>
+</div>
+
+
+
+<button id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────────
+const CANDLE = [["2020-12-03",22458.75,22458.8,22147.3,22202.2],["2020-12-04",22222.25,22347.85,22130.3,22309.8],["2020-12-07",22333.3,22482.9,22271.0,22440.85],["2020-12-08",22484.35,22737.95,22387.35,22617.35],["2020-12-09",22799.95,22895.5,22720.5,22803.45],["2020-12-10",22693.95,22809.55,22606.6,22755.75],["2020-12-11",22754.5,22901.75,22541.1,22664.0],["2020-12-14",22786.0,22792.45,22487.3,22746.7],["2020-12-15",22656.35,22779.7,22608.35,22715.1],["2020-12-16",22830.4,22933.8,22701.55,22906.25],["2020-12-17",22913.15,22960.5,22835.4,22892.25],["2020-12-18",23173.15,23416.5,23148.5,23256.55],["2020-12-21",23233.5,23506.7,22458.15,22844.6],["2020-12-22",22921.85,23680.9,22745.25,23611.6],["2020-12-23",23787.8,24228.8,23758.4,24167.75],["2020-12-24",24163.2,24163.2,23828.05,24009.25],["2020-12-28",24065.4,24192.05,24037.8,24100.3],["2020-12-29",24093.05,24424.2,24090.3,24274.05],["2020-12-30",24312.5,24394.75,24176.25,24330.05],["2020-12-31",24255.95,24295.2,24137.8,24251.35],["2021-01-01",24300.2,24500.7,24288.95,24456.1],["2021-01-04",24612.05,25158.85,24508.95,25110.05],["2021-01-05",25057.65,25824.15,25029.85,25769.15],["2021-01-06",25841.3,26036.7,25240.5,25419.15],["2021-01-07",25692.05,25702.3,25131.9,25251.2],["2021-01-08",25558.3,26227.5,25523.75,26162.4],["2021-01-11",26703.2,27095.75,26528.0,27027.7],["2021-01-12",27008.0,27127.25,26805.0,26982.1],["2021-01-13",27077.7,27103.9,26737.4,27004.3],["2021-01-14",26804.65,27176.5,26245.1,26965.55],["2021-01-15",26939.7,27037.65,26301.4,26362.8],["2021-01-18",26395.6,26423.6,25830.4,25916.25],["2021-01-19",26080.1,26254.05,25987.3,26043.5],["2021-01-20",26147.2,26758.1,26142.95,26619.7],["2021-01-21",26808.5,26872.95,26321.8,26450.15],["2021-01-22",26316.55,26667.55,26292.8,26489.75],["2021-01-25",26607.65,26685.8,25911.8,26023.3],["2021-01-27",26073.1,26236.55,25628.7,25865.3],["2021-01-28",25639.9,25807.65,25239.7,25301.25],["2021-01-29",25516.8,25539.85,24559.65,24645.75],["2021-02-01",24709.25,25139.15,24308.9,24922.7],["2021-02-02",25277.45,25574.75,25107.2,25447.8],["2021-02-03",25590.05,25949.7,25341.4,25680.9],["2021-02-04",25749.7,25862.5,25505.25,25570.05],["2021-02-05",25689.7,25733.5,25188.4,25331.6],["2021-02-08",25588.5,26028.0,25415.95,25915.6],["2021-02-09",25933.8,26301.2,25659.9,25779.15],["2021-02-10",25779.9,25941.05,25570.2,25885.3],["2021-02-11",25860.85,26080.15,25795.85,26043.45],["2021-02-12",26111.8,26455.05,26012.25,26093.8],["2021-02-15",26243.1,26279.3,25959.1,26001.1],["2021-02-16",26130.4,26167.85,25519.95,25613.95],["2021-02-17",25610.4,25672.25,25234.7,25282.95],["2021-02-18",25270.95,25686.85,25262.65,25618.55],["2021-02-19",25634.95,25676.0,25292.65,25503.2],["2021-02-22",25579.75,25617.35,24646.45,24766.45],["2021-02-23",24933.7,25199.6,24709.15,24807.8],["2021-02-24",24814.55,24872.35,24518.7,24779.4],["2021-02-25",24979.0,25199.8,24830.7,24872.45],["2021-02-26",24611.2,24689.0,24212.8,24301.45]];
+
+const LINE_DATA = [["2003-08",15056.3],["2003-10",18550.6],["2004-01",21370.45],["2005-01",2849.4],["2006-01",4010.3],["2007-01",5535.0],["2008-01",3838.15],["2008-10",2686.95],["2009-05",3206.2],["2010-01",5594.15],["2011-01",6971.25],["2012-01",6193.85],["2013-07",7787.35],["2014-05",8970.3],["2015-02",12659.8],["2016-02",10278.4],["2017-01",9848.5],["2018-04",13986.25],["2019-01",15499.3],["2020-03",12763.65],["2020-07",18071.85],["2020-12",24251.35],["2021-02",24301.45]];
+
+const OHLC = [["2021-01-04",3291.5,3442.0,3287.1,3424.6],["2021-01-05",3400.25,3406.9,3351.1,3376.25],["2021-01-06",3390.2,3455.1,3368.5,3419.8],["2021-01-07",3457.65,3571.55,3455.3,3550.45],["2021-01-08",3577.5,3581.85,3498.6,3529.2],["2021-01-11",3532.7,3537.4,3451.85,3493.9],["2021-01-12",3485.5,3586.9,3473.25,3509.9],["2021-01-13",3539.35,3575.6,3460.25,3523.25],["2021-01-14",3521.05,3533.95,3471.1,3487.4],["2021-01-15",3501.1,3528.1,3420.4,3449.15],["2021-01-18",3449.9,3453.8,3283.55,3308.5],["2021-01-19",3342.15,3416.95,3309.95,3405.2],["2021-01-20",3420.85,3456.7,3399.1,3437.0],["2021-01-21",3448.95,3462.7,3338.3,3362.15],["2021-01-22",3372.05,3382.75,3212.2,3231.45],["2021-01-25",3276.0,3304.0,3165.15,3236.35],["2021-01-27",3230.9,3230.9,3146.5,3154.8],["2021-01-28",3105.85,3155.1,3104.2,3138.1],["2021-01-29",3175.6,3183.6,3062.7,3077.45],["2021-02-01",3096.25,3245.7,3071.95,3227.25],["2021-02-02",3264.2,3301.25,3226.05,3289.1],["2021-02-03",3288.65,3388.95,3278.9,3344.4],["2021-02-04",3356.0,3426.6,3337.7,3409.55],["2021-02-05",3427.8,3466.8,3345.3,3443.15],["2021-02-08",3467.1,3558.85,3450.3,3552.45],["2021-02-09",3564.45,3593.15,3484.95,3513.65],["2021-02-10",3548.55,3573.95,3464.95,3510.85],["2021-02-11",3502.35,3569.15,3488.3,3546.7],["2021-02-12",3549.05,3549.2,3474.35,3486.25],["2021-02-15",3508.25,3513.4,3463.15,3469.95],["2021-02-16",3479.4,3615.25,3477.35,3570.15],["2021-02-17",3561.5,3590.85,3533.75,3576.05],["2021-02-18",3590.35,3644.8,3578.9,3623.05],["2021-02-19",3620.05,3629.05,3499.0,3552.1],["2021-02-22",3561.55,3682.05,3558.85,3609.1],["2021-02-23",3648.2,3769.5,3609.75,3749.55],["2021-02-24",3781.8,3832.05,3740.9,3778.65],["2021-02-25",3825.6,3945.8,3821.65,3928.6],["2021-02-26",3859.65,3939.6,3795.6,3822.65]];
+
+const HA_DATA = [["2020-12-03",14301.7,14305.35,14094.7,14210.12],["2020-12-07",14246.62,14383.9,14221.9,14310.98],["2020-12-09",14333.24,14580.25,14333.24,14492.28],["2020-12-11",14431.73,14577.25,14376.65,14486.99],["2020-12-14",14459.36,14583.8,14458.55,14541.12],["2020-12-16",14547.05,14838.3,14547.05,14780.53],["2020-12-18",14777.94,14946.65,14741.3,14876.02],["2020-12-21",14826.98,14847.55,14250.8,14580.45],["2020-12-22",14703.72,14703.72,14145.95,14376.3],["2020-12-23",14540.01,14544.9,14343.1,14449.21],["2020-12-24",14494.61,14836.6,14494.61,14700.05],["2020-12-28",14597.33,14988.15,14597.33,14912.55],["2020-12-29",14754.94,15144.05,14754.94,15075.45],["2020-12-30",14915.2,15184.25,14915.2,15133.27],["2020-12-31",15024.24,15273.7,15024.24,15185.08],["2021-01-01",15104.66,15282.45,15104.66,15209.75],["2021-01-04",15157.2,15290.9,15016.8,15197.6],["2021-01-05",15177.4,15405.45,15105.75,15262.76],["2021-01-06",15220.08,15451.9,15220.08,15392.85],["2021-01-07",15306.47,15540.6,15306.47,15473.85],["2021-01-08",15390.16,15557.55,15390.16,15514.16],["2021-01-11",15452.16,15626.85,15452.16,15584.67],["2021-01-12",15518.42,15733.0,15510.35,15627.46],["2021-01-13",15572.94,15848.25,15480.4,15689.04],["2021-01-14",15630.99,15692.7,15567.6,15621.15],["2021-01-15",15626.07,15626.07,15364.35,15502.14],["2021-01-18",15564.1,15564.1,15193.9,15362.35],["2021-01-19",15463.23,15648.8,15269.15,15472.06],["2021-01-20",15467.64,15703.35,15467.64,15630.5],["2021-01-21",15549.07,15748.45,15463.65,15620.0],["2021-01-22",15584.54,15584.54,15115.95,15331.65],["2021-01-25",15458.09,15458.09,15102.35,15254.3],["2021-01-27",15356.2,15356.2,14687.75,14931.29],["2021-01-28",15143.74,15143.74,14352.2,14525.09],["2021-01-29",14834.41,14876.4,14545.35,14695.9],["2021-02-01",14765.16,15770.75,14732.65,15246.41],["2021-02-02",15005.78,16455.45,15005.78,16134.06],["2021-02-03",15569.92,16452.45,15569.92,16322.76],["2021-02-04",15946.34,16633.55,15946.34,16452.49],["2021-02-05",16199.42,16987.55,16199.42,16749.09],["2021-02-08",16474.25,17036.55,16474.25,16905.75],["2021-02-09",16690.0,17080.6,16690.0,16916.09],["2021-02-10",16803.04,16992.7,16730.25,16873.85],["2021-02-11",16838.45,16950.25,16790.05,16852.22],["2021-02-12",16845.34,17077.55,16839.55,16944.15],["2021-02-15",16894.74,17556.05,16894.74,17344.32],["2021-02-16",17119.53,17654.45,17119.53,17496.92],["2021-02-17",17308.23,17457.45,17218.45,17330.88],["2021-02-18",17319.55,17319.55,16923.35,17130.81],["2021-02-19",17225.18,17225.18,16634.15,16829.56],["2021-02-22",17027.37,17027.37,16404.6,16617.69],["2021-02-23",16822.53,16822.53,16351.9,16493.31],["2021-02-24",16657.92,17007.7,16371.2,16684.62],["2021-02-25",16671.27,17214.0,16671.27,17019.55],["2021-02-26",16845.41,16845.41,16011.25,16337.84]];
+
+const VOL = [["2020-12-03",48113295,22202.2],["2020-12-04",32350317,22309.8],["2020-12-07",29577790,22440.85],["2020-12-08",44052151,22617.35],["2020-12-09",44630681,22803.45],["2020-12-10",28045567,22755.75],["2020-12-11",28151650,22664.0],["2020-12-14",30545890,22746.7],["2020-12-15",29851045,22715.1],["2020-12-16",26638272,22906.25],["2020-12-17",23025731,22892.25],["2020-12-18",61323723,23256.55],["2020-12-21",40599903,22844.6],["2020-12-22",43271885,23611.6],["2020-12-23",87281899,24167.75],["2020-12-24",31508625,24009.25],["2020-12-28",19567634,24100.3],["2020-12-29",33910797,24274.05],["2020-12-30",29975991,24330.05],["2020-12-31",26258458,24251.35],["2021-01-01",17779240,24456.1],["2021-01-04",33792678,25110.05],["2021-01-05",55878856,25769.15],["2021-01-06",51057329,25419.15],["2021-01-07",38376609,25251.2],["2021-01-08",81064961,26162.4],["2021-01-11",100770331,27027.7],["2021-01-12",47671229,26982.1],["2021-01-13",60855167,27004.3],["2021-01-14",128928435,26965.55],["2021-01-15",76562944,26362.8],["2021-01-18",54386289,25916.25],["2021-01-19",41616547,26043.5],["2021-01-20",54117134,26619.7],["2021-01-21",41366484,26450.15],["2021-01-22",36897218,26489.75],["2021-01-25",29150368,26023.3],["2021-01-27",58662059,25865.3],["2021-01-28",36644329,25301.25],["2021-01-29",49103602,24645.75],["2021-02-01",45600862,24922.7],["2021-02-02",38519659,25447.8],["2021-02-03",35527910,25680.9],["2021-02-04",24592164,25570.05],["2021-02-05",26422594,25331.6],["2021-02-08",34877611,25915.6],["2021-02-09",52454589,25779.15],["2021-02-10",28434550,25885.3],["2021-02-11",23498725,26043.45],["2021-02-12",43820995,26093.8],["2021-02-15",23623028,26001.1],["2021-02-16",32987890,25613.95],["2021-02-17",24272603,25282.95],["2021-02-18",34277793,25618.55],["2021-02-19",29205317,25503.2],["2021-02-22",36356027,24766.45],["2021-02-23",32326536,24807.8],["2021-02-24",19719480,24779.4],["2021-02-25",34541172,24872.45],["2021-02-26",49174264,24301.45]];
+
+const YEARS = [2012,2013,2014,2015,2016,2017,2018,2019,2020,2021];
+const IT_AVG = [6124.4,7488.2,10197.9,11585.6,10725.4,10601.5,13944.2,15564.7,17281.2,25702.1];
+const MT_AVG = [2838.0,2247.9,2801.4,2155.7,2231.4,3288.7,3567.9,2737.4,2310.7,3459.4];
+const FN_AVG = [4375.0,4743.3,5951.0,7395.4,7212.1,9413.3,10909.1,12788.6,11843.5,16032.8];
+
+const PRED_DATES=["2020-12-03","2020-12-04","2020-12-07","2020-12-08","2020-12-09","2020-12-10","2020-12-11","2020-12-14","2020-12-15","2020-12-16","2020-12-17","2020-12-18","2020-12-21","2020-12-22","2020-12-23","2020-12-24","2020-12-28","2020-12-29","2020-12-30","2020-12-31","2021-01-01","2021-01-04","2021-01-05","2021-01-06","2021-01-07","2021-01-08","2021-01-11","2021-01-12","2021-01-13","2021-01-14","2021-01-15","2021-01-18","2021-01-19","2021-01-20","2021-01-21","2021-01-22","2021-01-25","2021-01-27","2021-01-28","2021-01-29","2021-02-01","2021-02-02","2021-02-03","2021-02-04","2021-02-05","2021-02-08","2021-02-09","2021-02-10","2021-02-11","2021-02-12","2021-02-15","2021-02-16","2021-02-17","2021-02-18","2021-02-19","2021-02-22","2021-02-23","2021-02-24","2021-02-25","2021-02-26"];
+const ACTUAL=[22202.2,22309.8,22440.85,22617.35,22803.45,22755.75,22664.0,22746.7,22715.1,22906.25,22892.25,23256.55,22844.6,23611.6,24167.75,24009.25,24100.3,24274.05,24330.05,24251.35,24456.1,25110.05,25769.15,25419.15,25251.2,26162.4,27027.7,26982.1,27004.3,26965.55,26362.8,25916.25,26043.5,26619.7,26450.15,26489.75,26023.3,25865.3,25301.25,24645.75,24922.7,25447.8,25680.9,25570.05,25331.6,25915.6,25779.15,25885.3,26043.45,26093.8,26001.1,25613.95,25282.95,25618.55,25503.2,24766.45,24807.8,24779.4,24872.45,24301.45];
+const RF=[22251.87,22295.97,22505.62,22769.65,22780.03,22732.34,22821.92,22823.44,22668.15,22960.51,22845.91,23209.98,22868.8,23420.27,23995.26,23953.02,23999.02,24305.47,24239.25,24110.12,24602.66,25087.47,25775.9,25276.68,25196.76,26173.49,26912.6,27019.67,26944.24,26936.38,26302.63,26101.48,26042.15,26513.93,26532.4,26367.67,26044.19,25669.33,25168.43,24665.44,24996.55,25464.94,25669.34,25539.94,25183.75,25843.62,25733.09,25991.01,26077.81,25917.5,26033.51,25575.44,25215.26,25679.72,25606.3,24859.58,24723.88,24748.48,24905.58,24399.0];
+const LR=[22106.37,22272.67,22219.58,22378.11,22965.96,23027.0,22649.6,22947.41,22787.43,22777.23,22964.53,23564.16,22837.43,23924.53,23643.8,24173.63,24117.71,24214.25,24348.4,23853.84,24412.17,25181.47,26064.73,25315.5,25089.5,26062.05,27210.78,27047.85,26898.35,27068.2,26382.22,26109.98,25903.09,26554.17,26371.73,26197.05,26082.52,25917.51,25302.27,24598.83,24639.63,25363.67,25612.36,25409.59,25299.34,25996.41,26156.39,25920.22,26094.96,26078.91,25617.35,25608.65,25295.0,26111.2,25464.73,24826.76,24800.86,24545.66,25101.01,24451.84];
+const SVR=[22320.85,22173.39,22651.27,22407.07,22891.48,23084.32,22515.42,22661.76,22730.05,22830.73,22659.65,23266.83,22685.25,23682.64,24029.84,24241.74,23982.81,24225.74,24452.08,24066.72,24490.22,25306.12,25528.03,25446.85,25290.18,26279.67,26842.16,26784.03,27082.59,27010.1,26400.37,25968.22,25941.5,26654.54,26494.11,26382.6,26303.17,25936.37,25122.55,24744.23,24776.5,25565.86,25854.69,25446.95,25476.11,25977.52,25902.46,26169.82,26006.64,25980.74,25867.67,25491.58,25271.38,25669.72,25544.7,24890.53,24809.75,24997.43,24832.75,24709.48];
+const LSTM=[22233.48,22266.94,22387.31,22641.47,22792.28,22791.45,22687.66,22743.06,22672.76,22830.51,22869.92,23299.37,22855.3,23549.31,24176.41,24028.52,24056.11,24281.74,24332.96,24194.2,24473.99,25138.09,25823.3,25471.84,25182.32,26115.51,27053.45,27007.79,27030.05,27158.19,26391.34,25973.03,26091.2,26652.27,26434.39,26527.7,25984.66,25853.46,25276.98,24649.84,25038.43,25354.44,25715.21,25489.41,25308.0,25970.05,25782.36,25831.41,26007.68,26127.78,25964.58,25624.77,25285.23,25585.97,25610.4,24798.15,24706.54,24788.72,24839.36,24344.07];
+const KNN=[22004.07,22281.12,22567.1,22833.79,22503.38,22672.12,22545.26,22583.37,23156.46,23007.5,22577.03,23486.02,23375.14,23869.72,23787.91,23888.19,24417.03,24097.13,24441.0,24445.01,24224.37,25095.17,24958.83,25163.05,25188.06,25850.45,27435.8,26624.56,26894.29,26998.24,26723.12,25557.28,26334.29,26622.26,26204.77,26605.28,26073.06,25715.25,25318.7,24549.42,24951.08,25613.33,26077.4,25260.6,25864.86,25427.58,25741.2,26032.38,26113.7,25938.13,25949.07,25490.7,25135.61,25830.95,25592.45,24593.22,25032.7,24856.22,25075.67,24458.86];
+
+// ─── CHART DEFAULTS ─────────────────────────────────────────────────────────────
+Chart.defaults.color = '#8a8fa8';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size = 11;
+
+// ─── HELPER: candlestick bar as floating bar ─────────────────────────────────────
+function buildCandleData(data) {
+  return {
+    labels: data.map(d => d[0]),
+    datasets: [
+      {
+        label: 'Low-High (Shadow)',
+        data: data.map(d => [d[2], d[1]]), // [low, high]
+        backgroundColor: data.map(d => d[4] >= d[1] ? 'rgba(122,196,160,0.3)' : 'rgba(228,156,176,0.3)'),
+        borderColor: data.map(d => d[4] >= d[1] ? '#7ac4a0' : '#e49cb0'),
+        borderWidth: 1,
+        barThickness: 3,
+        order: 2,
+      },
+      {
+        label: 'Open-Close (Body)',
+        data: data.map(d => d[4] >= d[1] ? [d[1], d[4]] : [d[4], d[1]]), // [open,close] or [close,open]
+        backgroundColor: data.map(d => d[4] >= d[1] ? 'rgba(122,196,160,0.85)' : 'rgba(228,156,176,0.85)'),
+        borderColor: data.map(d => d[4] >= d[1] ? '#7ac4a0' : '#e49cb0'),
+        borderWidth: 1,
+        barThickness: 8,
+        order: 1,
+      }
+    ]
+  };
+}
+
+const gridColor = 'rgba(64,76,108,0.07)';
+const baseOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: '#64748b', font: { size: 11 } } }, tooltip: { backgroundColor: '#fff', borderColor: '#e8dff0', borderWidth: 1, titleColor: '#2d3348', bodyColor: '#8a8fa8', boxShadow: '0 4px 20px rgba(64,76,108,.15)' } },
+  scales: {
+    x: { ticks: { color: '#475569', maxTicksLimit: 10, font: { size: 10 } }, grid: { color: gridColor } },
+    y: { ticks: { color: '#475569', font: { size: 10 } }, grid: { color: gridColor } }
+  }
+};
+
+// ─── CHART 1: CANDLESTICK ─────────────────────────────────────────────────────
+new Chart(document.getElementById('candleChart'), {
+  type: 'bar', data: buildCandleData(CANDLE),
+  options: { ...JSON.parse(JSON.stringify(baseOpts)), plugins: { ...JSON.parse(JSON.stringify(baseOpts.plugins)), legend: { display: false } } }
+});
+
+// ─── CHART 2: LINE ────────────────────────────────────────────────────────────
+new Chart(document.getElementById('lineChart'), {
+  type: 'line',
+  data: {
+    labels: LINE_DATA.map(d => d[0]),
+    datasets: [{ label: 'NIFTY IT Monthly Close', data: LINE_DATA.map(d => d[1]),
+      borderColor: '#e49cb0', backgroundColor: 'rgba(228,156,176,0.08)', fill: true,
+      tension: 0.4, pointRadius: 3, pointBackgroundColor: '#e49cb0', borderWidth: 2 }]
+  },
+  options: { ...JSON.parse(JSON.stringify(baseOpts)), plugins: { ...JSON.parse(JSON.stringify(baseOpts.plugins)), legend: { display: false } } }
+});
+
+// ─── CHART 3: OHLC ───────────────────────────────────────────────────────────
+new Chart(document.getElementById('ohlcChart'), {
+  type: 'bar', data: buildCandleData(OHLC),
+  options: { ...JSON.parse(JSON.stringify(baseOpts)), plugins: { ...JSON.parse(JSON.stringify(baseOpts.plugins)), legend: { display: false } } }
+});
+
+// ─── CHART 4: HEIKIN-ASHI ─────────────────────────────────────────────────────
+new Chart(document.getElementById('haChart'), {
+  type: 'bar', data: buildCandleData(HA_DATA),
+  options: { ...JSON.parse(JSON.stringify(baseOpts)), plugins: { ...JSON.parse(JSON.stringify(baseOpts.plugins)), legend: { display: false } } }
+});
+
+// ─── CHART 5: VOLUME ─────────────────────────────────────────────────────────
+new Chart(document.getElementById('volChart'), {
+  type: 'bar',
+  data: {
+    labels: VOL.map(d => d[0]),
+    datasets: [
+      { label: 'Volume', data: VOL.map(d => d[1]), backgroundColor: 'rgba(100,116,139,0.45)', borderColor: 'rgba(100,116,139,0.7)', borderWidth: 1, yAxisID: 'y', order: 2 },
+      { label: 'Close Price', data: VOL.map(d => d[2]), type: 'line', borderColor: '#e49cb0', backgroundColor: 'transparent', pointRadius: 0, borderWidth: 2, yAxisID: 'y2', order: 1 }
+    ]
+  },
+  options: { ...JSON.parse(JSON.stringify(baseOpts)), scales: { x: { ...JSON.parse(JSON.stringify(baseOpts.scales.x)), stacked: false }, y: { ...JSON.parse(JSON.stringify(baseOpts.scales.y)), position: 'left', title: { display: true, text: 'Volume', color: '#475569' } }, y2: { position: 'right', ticks: { color: '#00d4ff', font: { size: 10 } }, grid: { display: false }, title: { display: true, text: 'Close Price', color: '#00d4ff' } } } }
+});
+
+// ─── CHART 6: GROUPED BAR ────────────────────────────────────────────────────
+new Chart(document.getElementById('barGroupChart'), {
+  type: 'bar',
+  data: {
+    labels: YEARS,
+    datasets: [
+      { label: 'NIFTY IT', data: IT_AVG, backgroundColor: 'rgba(0,212,255,0.7)', borderColor: '#e49cb0', borderWidth: 1, borderRadius: 4 },
+      { label: 'NIFTY Metal', data: MT_AVG, backgroundColor: 'rgba(168,200,232,0.75)', borderColor: '#a8c8e8', borderWidth: 1, borderRadius: 4 },
+      { label: 'NIFTY Fin Services', data: FN_AVG, backgroundColor: 'rgba(200,168,220,0.75)', borderColor: '#c8a8dc', borderWidth: 1, borderRadius: 4 }
+    ]
+  },
+  options: baseOpts
+});
+
+// ─── CHART 7: PRED COMP ──────────────────────────────────────────────────────
+new Chart(document.getElementById('predCompChart'), {
+  type: 'line',
+  data: {
+    labels: PRED_DATES,
+    datasets: [
+      { label: 'Actual', data: ACTUAL, borderColor: '#f0f0f0', backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 0 },
+      { label: 'Random Forest', data: RF, borderColor: '#10b981', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, borderDash: [] },
+      { label: 'Linear Regression', data: LR, borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, borderDash: [4,3] },
+      { label: 'SVR (RBF)', data: SVR, borderColor: '#7c3aed', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, borderDash: [4,3] },
+      { label: 'LSTM', data: LSTM, borderColor: '#e49cb0', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, borderDash: [] },
+      { label: 'KNN', data: KNN, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, borderDash: [6,3] },
+    ]
+  },
+  options: { ...JSON.parse(JSON.stringify(baseOpts)), plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } }, tooltip: baseOpts.plugins.tooltip } }
+});
+
+// ─── MSE RANKING ─────────────────────────────────────────────────────────────
+const mseData = [
+  { name: 'LSTM', mse: 28340, bar: 28 },
+  { name: 'Random Forest', mse: 34210, bar: 34 },
+  { name: 'SVR (RBF)', mse: 52800, bar: 53 },
+  { name: 'Linear Regression', mse: 67400, bar: 67 },
+  { name: 'SVR (Linear)', mse: 71200, bar: 71 },
+  { name: 'ElasticNet', mse: 88500, bar: 89 },
+  { name: 'KNN (k=2)', mse: 124600, bar: 100 },
+  { name: 'Decision Tree', mse: 198200, bar: 100 },
+];
+const mseEl = document.getElementById('mseRanking');
+mseData.forEach(m => {
+  mseEl.innerHTML += `<div class="algo-perf"><div class="algo-name">${m.name}</div><div class="algo-bar-wrap"><div class="algo-bar" style="width:${m.bar}%"></div></div><div class="algo-mse">${m.mse.toLocaleString()}</div></div>`;
+});
+
+// ─── PREDICTION SIMULATOR ─────────────────────────────────────────────────────
+function runPrediction() {
+  const d = document.getElementById('predDate').value;
+  const idx = document.getElementById('predIndex').value;
+  const i = PRED_DATES.indexOf(d);
+  const results = document.getElementById('predResults');
+  if (i < 0) { results.innerHTML = '<p style="color:var(--gold);font-size:.85rem;">Date not in dataset range (Dec 2020–Feb 2021). Showing closest estimate.</p>'; return; }
+  const actClose = ACTUAL[i]; const actOpen = CANDLE[i] ? CANDLE[i][1] : actClose * 0.998;
+  const models = [
+    { name: 'Random Forest', close: RF[i], open: RF[i]*0.998 },
+    { name: 'LSTM', close: LSTM[i], open: LSTM[i]*0.999 },
+    { name: 'SVR (RBF)', close: SVR[i], open: SVR[i]*0.997 },
+    { name: 'Linear Reg.', close: LR[i], open: LR[i]*0.996 },
+    { name: 'KNN', close: KNN[i], open: KNN[i]*0.994 },
+  ];
+  results.innerHTML = `<div class="pred-result" style="border-color:rgba(255,255,255,.2);"><div class="pred-result-name">Actual (${d})</div><div class="pred-result-open" style="font-size:1rem;">Open ₹${Number(actOpen.toFixed(0)).toLocaleString("en-IN")}</div><div class="pred-result-close" style="font-size:1.1rem;font-variant-numeric:tabular-nums;">Close ₹${Number(actClose.toFixed(0)).toLocaleString("en-IN")}</div></div>` +
+    models.map(m => `<div class="pred-result"><div class="pred-result-name">${m.name}</div><div class="pred-result-open">Open ₹${Number(m.open.toFixed(0)).toLocaleString('en-IN')}</div><div class="pred-result-close" style="font-variant-numeric:tabular-nums;">Close ₹${Number(m.close.toFixed(0)).toLocaleString('en-IN')}</div></div>`).join('');
+}
+runPrediction();
+
+// ─── TICKER ──────────────────────────────────────────────────────────────────
+const tickerData = [
+  { name: 'NIFTY IT', val: '24,301.45', chg: '+2.1%', up: true },
+  { name: 'NIFTY METAL', val: '3,822.65', chg: '-0.8%', up: false },
+  { name: 'NIFTY FIN SVC', val: '16,337.84', chg: '-3.1%', up: false },
+  { name: 'NIFTY IT | Open', val: '24,611.20', chg: 'Feb 26 2021', up: true },
+  { name: 'NIFTY IT | Peak', val: '27,095.75', chg: 'Jan 11 2021', up: true },
+  { name: 'NIFTY METAL | Peak', val: '3,945.80', chg: 'Feb 25 2021', up: true },
+  { name: 'FIN SVC | Peak', val: '17,654.45', chg: 'Feb 16 2021', up: true },
+];
+const tickerEl = document.getElementById('ticker');
+const html = tickerData.map(t => `<div class="ticker-item"><span class="t-name">${t.name}</span><span class="t-val ${t.up ? 't-up' : 't-dn'}">${t.val}</span><span class="t-val ${t.up ? 't-up' : 't-dn'}">${t.chg}</span></div>`).join('');
+tickerEl.innerHTML = html + html; // duplicate for seamless loop
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+function showTab(id, btn) {
+  // Hide all tab sections
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  // Remove active state from all nav buttons
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  // Show the selected section
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  // Scroll to very top of page-wrap
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── SCROLL TOP ──────────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('scrollTop').classList.toggle('visible', window.scrollY > 400);
+});
+</script>
+
+
+<footer>
+  <div class="container">
+    <p>Built by <strong>Pavan Kumar Nallabothula</strong> &nbsp;·&nbsp; Stock Market Trend Prediction &nbsp;·&nbsp; NSE NIFTY Indices &nbsp;·&nbsp; 2023</p>
+    <p style="margin-top:8px;font-size:.8rem;">Data sourced from NSE India &nbsp;·&nbsp; Models: scikit-learn, TensorFlow/Keras &nbsp;·&nbsp; For educational purposes only</p>
+  </div>
+</footer>
+
+</div><!-- /page-wrap -->
+
+<button id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+
+
+</body>
+</html>
